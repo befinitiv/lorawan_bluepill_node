@@ -164,7 +164,9 @@ void LoRaWAN::RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Pack
   */
 
   // TCNT0 is timer0 continous timer, kind of random selection of frequency
-  switch (TCNT0 % 3)
+
+  // EU863-870 specifications
+  switch (TCNT0 % 8)
   {
       case 0x00: //Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
           _rfm95->RFM_Write(0x06,0xD9);
@@ -181,6 +183,35 @@ void LoRaWAN::RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Pack
           _rfm95->RFM_Write(0x07,0x20);
           _rfm95->RFM_Write(0x08,0x24);
           break;
+        // added four more channels
+        case 0x03: // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B
+          _rfm95->RFM_Write(0x06,0xD8);
+          _rfm95->RFM_Write(0x07,0xC6);
+          _rfm95->RFM_Write(0x08,0x8B);
+          break;
+        case 0x04: // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358
+          _rfm95->RFM_Write(0x06,0xD8);
+          _rfm95->RFM_Write(0x07,0xD3);
+          _rfm95->RFM_Write(0x08,0x58);
+          break;
+        case 0x05: // Channel 5 867.500 MHz / 61.035 Hz = 14213156 = 0xD8E024
+          _rfm95->RFM_Write(0x06,0xD8);
+          _rfm95->RFM_Write(0x07,0xE0);
+          _rfm95->RFM_Write(0x08,0x24);
+          break;
+        case 0x06: // Channel 6 867.700 MHz / 61.035 Hz = 14216433 = 0xD8ECF1
+          _rfm95->RFM_Write(0x06,0xD8);
+          _rfm95->RFM_Write(0x07,0xEC);
+          _rfm95->RFM_Write(0x08,0xF1);
+          break;
+        case 0x07: // Channel 7 867.900 MHz / 61.035 Hz = 14219710 = 0xD8F9BE
+          _rfm95->RFM_Write(0x06,0xD8);
+          _rfm95->RFM_Write(0x07,0xF9);
+          _rfm95->RFM_Write(0x08,0xBE);
+          break;
+        // FSK       868.800 Mhz => not used in this config
+
+
     }
 
 
