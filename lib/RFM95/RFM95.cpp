@@ -3,8 +3,8 @@
   Created by Leo Korbee, March 31, 2018.
   Released into the public domain.
   @license Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
-  Thanks to all the folks who contributed beforme me on this code.
-
+  Thanks to all the folks who contributed on the base of this code.
+  (Gerben den Hartog, et al - Ideetron.nl)
 */
 
 #include "Arduino.h"
@@ -133,7 +133,7 @@ unsigned char RFM95::RFM_Read(unsigned char RFM_Address)
   unsigned char RFM_Data;
 
   //Set NSS pin low to start SPI communication
-  digitalWrite(10,LOW);
+  digitalWrite(_NSS,LOW);
 
   //Send Address
   SPI.transfer(RFM_Address);
@@ -141,12 +141,11 @@ unsigned char RFM95::RFM_Read(unsigned char RFM_Address)
   RFM_Data = SPI.transfer(0x00);
 
   //Set NSS high to end communication
-  digitalWrite(10,HIGH);
+  digitalWrite(_NSS,HIGH);
 
   //Return received data
   return RFM_Data;
 }
-
 
 /*
 *****************************************************************************************
@@ -156,7 +155,8 @@ unsigned char RFM95::RFM_Read(unsigned char RFM_Address)
 *               Package_Length  Length of the package to send
 *****************************************************************************************
 */
-void RFM95::sendFrame(unsigned char *RFM_Tx_Package, unsigned char Package_Length)
+
+void RFM95::RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Package_Length)
 {
   unsigned char i;
   // unsigned char RFM_Tx_Location = 0x00;
@@ -178,13 +178,15 @@ void RFM95::sendFrame(unsigned char *RFM_Tx_Package, unsigned char Package_Lengt
   /*
   fixed frequency
   // 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
-  RFM_Write(0x06,0xD9);
-  RFM_Write(0x07,0x06);
-  RFM_Write(0x08,0x8B);
+  _rfm95.RFM_Write(0x06,0xD9);
+  _rfm95.RFM_Write(0x07,0x06);
+  _rfm95.RFM_Write(0x08,0x8B);
   */
 
   // TCNT0 is timer0 continous timer, kind of random selection of frequency
-  switch (TCNT0 % 3)
+
+  // EU863-870 specifications
+  switch (TCNT0 % 8)
   {
       case 0x00: //Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
           RFM_Write(0x06,0xD9);
@@ -201,6 +203,35 @@ void RFM95::sendFrame(unsigned char *RFM_Tx_Package, unsigned char Package_Lengt
           RFM_Write(0x07,0x20);
           RFM_Write(0x08,0x24);
           break;
+        // added five more channels
+        case 0x03: // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B
+          RFM_Write(0x06,0xD8);
+          RFM_Write(0x07,0xC6);
+          RFM_Write(0x08,0x8B);
+          break;
+        case 0x04: // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358
+          RFM_Write(0x06,0xD8);
+          RFM_Write(0x07,0xD3);
+          RFM_Write(0x08,0x58);
+          break;
+        case 0x05: // Channel 5 867.500 MHz / 61.035 Hz = 14213156 = 0xD8E024
+          RFM_Write(0x06,0xD8);
+          RFM_Write(0x07,0xE0);
+          RFM_Write(0x08,0x24);
+          break;
+        case 0x06: // Channel 6 867.700 MHz / 61.035 Hz = 14216433 = 0xD8ECF1
+          RFM_Write(0x06,0xD8);
+          RFM_Write(0x07,0xEC);
+          RFM_Write(0x08,0xF1);
+          break;
+        case 0x07: // Channel 7 867.900 MHz / 61.035 Hz = 14219710 = 0xD8F9BE
+          RFM_Write(0x06,0xD8);
+          RFM_Write(0x07,0xF9);
+          RFM_Write(0x08,0xBE);
+          break;
+        // FSK       868.800 Mhz => not used in this config
+        // 869.525 - SF9BW125 (RX2 downlink only) for package received
+
     }
 
 
@@ -234,17 +265,10 @@ void RFM95::sendFrame(unsigned char *RFM_Tx_Package, unsigned char Package_Lengt
   RFM_Write(0x01,0x83);
 
   //Wait for TxDone
-  while(digitalRead(_DIO0) == LOW)
+  while( digitalRead(_DIO0) == LOW )
   {
   }
 
   //Switch RFM to sleep
   RFM_Write(0x01,0x00);
-}
-
-
-// check for low signal DIO0
-bool RFM95::txDone()
-{
-  return (digitalRead(_DIO0) == LOW);
 }

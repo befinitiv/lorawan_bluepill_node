@@ -17,10 +17,9 @@ class RFM95
   public:
     RFM95(int DIO0, int NSS);
     void init();
-    void sendFrame(unsigned char *RFM_Tx_Package, unsigned char Package_Length);
-    bool txDone();
     void RFM_Write(unsigned char RFM_Address, unsigned char RFM_Data);
     unsigned char RFM_Read(unsigned char RFM_Address);
+    void RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Package_Length);
   private:
     int _DIO0;
     int _NSS;

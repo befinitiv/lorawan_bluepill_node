@@ -16,7 +16,8 @@
 #include "tinySPI.h"
 #include "BME280Spi.h"
 #include "LoRaWAN.h"
-#include "secconfig.h"
+#include "secconfig.h" // remember to rename secconfig_example.h to secconfig.h and to modify this file
+
 
 // RFM95W
 #define DIO0 10
@@ -24,7 +25,7 @@
 RFM95 rfm(DIO0, NSS);
 
 // define LoRaWAN layer
-LoRaWAN lora = LoRaWAN(&rfm);
+LoRaWAN lora = LoRaWAN(rfm);
 // frame counter for lora
 unsigned int Frame_Counter_Tx = 0x0000;
 
@@ -51,7 +52,7 @@ volatile int sleep_count = 38;
 // increase and checks the counter and sleep again until sleep_total is reached.
 // 5min * 60s = 300/8 = 37,5 = 38.
 // 17 seconds longer than 5 minutes with 37, so 35 is more apropriate
-const int sleep_total = 35;
+const int sleep_total = 35; // was 35
 
 // all functions declared
 ISR(WDT_vect);
@@ -122,6 +123,7 @@ void loop()
     Data[5] = humInt & 0xff;
 
     lora.Send_Data(Data, Data_Length, Frame_Counter_Tx);
+
     Frame_Counter_Tx++;
 
     // reset sleep count
