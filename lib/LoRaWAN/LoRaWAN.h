@@ -3,7 +3,7 @@
   Created by Leo Korbee, March 31, 2018.
   Released into the public domain.
   @license Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
-  Thanks to all the folks who contributed beforme me on this code.
+  Thanks to all the folks who contributed before me on this code.
 
 */
 
@@ -38,9 +38,10 @@ static const unsigned char PROGMEM S_Table[16][16] = {
 class LoRaWAN
 {
   public:
-    LoRaWAN(RFM95 *rfm95);
+    LoRaWAN(RFM95 &rfm95);
     void setKeys(unsigned char NwkSkey[], unsigned char AppSkey[], unsigned char DevAddr[]);
     void Send_Data(unsigned char *Data, unsigned char Data_Length, unsigned int Frame_Counter_Tx);
+
   private:
     RFM95 *_rfm95;
     // remember arrays are pointers!

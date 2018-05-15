@@ -3,8 +3,8 @@
   Created by Leo Korbee, March 31, 2018.
   Released into the public domain.
   @license Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
-  Thanks to all the folks who contributed beforme me on this code.
-
+  Thanks to all the folks who contributed on the base of this code.
+  (Gerben den Hartog, et al - Ideetron.nl)
 */
 
 #include "Arduino.h"
@@ -12,11 +12,10 @@
 
 
 // constructor
-LoRaWAN::LoRaWAN(RFM95 *rfm95)
+LoRaWAN::LoRaWAN(RFM95 &rfm95)
 {
-   _rfm95 = rfm95;
+   _rfm95 = &rfm95;
 }
-
 
 
 void LoRaWAN::setKeys(unsigned char NwkSkey[], unsigned char AppSkey[], unsigned char DevAddr[])
@@ -33,6 +32,7 @@ void LoRaWAN::setKeys(unsigned char NwkSkey[], unsigned char AppSkey[], unsigned
 * Arguments   : *Data pointer to the array of data that will be transmitted
 *               Data_Length nuber of bytes to be transmitted
 *               Frame_Counter_Up  Frame counter of upstream frames
+*
 *****************************************************************************************
 */
 void LoRaWAN::Send_Data(unsigned char *Data, unsigned char Data_Length, unsigned int Frame_Counter_Tx)
@@ -49,24 +49,21 @@ void LoRaWAN::Send_Data(unsigned char *Data, unsigned char Data_Length, unsigned
   unsigned char MIC[4];
 
   /*
-  https://hackmd.io/s/S1kg6Ymo-
+    @leo:
+    https://hackmd.io/s/S1kg6Ymo-
 
-  7…5 bits	4…2 bits	1…0 bits
-  MType	    RFU	      Major
+    7…5 bits	4…2 bits	1…0 bits
+    MType	    RFU	      Major
 
-  MType	Description
-  000	(0x00) Join Request
-  001	(0x20) Join Accept
-  010	(0x40) Unconfirmed Data Up
-  011	(0x60) Unconfirmed Data Down
-  100	(0x80) Confirmed Data Up
-  101	(0xA0) Confirmed Data Down
-  110	(0xC0) RFU
-  111	(0xE0) Proprietary
-
-
-
-
+    MType	Description
+    000	(0x00) Join Request
+    001	(0x20) Join Accept
+    010	(0x40) Unconfirmed Data Up
+    011	(0x60) Unconfirmed Data Down
+    100	(0x80) Confirmed Data Up
+    101	(0xA0) Confirmed Data Down
+    110	(0xC0) RFU
+    111	(0xE0) Proprietary
   */
 
 
@@ -123,113 +120,8 @@ void LoRaWAN::Send_Data(unsigned char *Data, unsigned char Data_Length, unsigned
   RFM_Package_Length = RFM_Package_Length + 4;
 
   //Send Package
-  RFM_Send_Package(RFM_Data, RFM_Package_Length);
+  _rfm95->RFM_Send_Package(RFM_Data, RFM_Package_Length);
 }
-
-
-/*
-*****************************************************************************************
-* Description : Function for sending a package with the RFM
-*
-* Arguments   : *RFM_Tx_Package Pointer to arry with data to be send
-*               Package_Length  Length of the package to send
-*****************************************************************************************
-*/
-
-void LoRaWAN::RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Package_Length)
-{
-  unsigned char i;
-  // unsigned char RFM_Tx_Location = 0x00;
-
-  //Set RFM in Standby mode wait on mode ready
-
-  _rfm95->RFM_Write(0x01,0x81);
-  /*
-  while (digitalRead(DIO5) == LOW)
-  {
-  }
-  */
-  delay(10);
-
-  //Switch DIO0 to TxDone
-  _rfm95->RFM_Write(0x40,0x40);
-  //Set carrier frequency
-
-  /*
-  fixed frequency
-  // 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
-  _rfm95.RFM_Write(0x06,0xD9);
-  _rfm95.RFM_Write(0x07,0x06);
-  _rfm95.RFM_Write(0x08,0x8B);
-  */
-
-  // TCNT0 is timer0 continous timer, kind of random selection of frequency
-  switch (TCNT0 % 3)
-  {
-      case 0x00: //Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
-          _rfm95->RFM_Write(0x06,0xD9);
-          _rfm95->RFM_Write(0x07,0x06);
-          _rfm95->RFM_Write(0x08,0x8B);
-          break;
-        case 0x01: //Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358
-          _rfm95->RFM_Write(0x06,0xD9);
-          _rfm95->RFM_Write(0x07,0x13);
-          _rfm95->RFM_Write(0x08,0x58);
-          break;
-        case 0x02: //Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024
-          _rfm95->RFM_Write(0x06,0xD9);
-          _rfm95->RFM_Write(0x07,0x20);
-          _rfm95->RFM_Write(0x08,0x24);
-          break;
-    }
-
-
-  //SF7 BW 125 kHz
-  _rfm95->RFM_Write(0x1E,0x74); //SF7 CRC On
-  _rfm95->RFM_Write(0x1D,0x72); //125 kHz 4/5 coding rate explicit header mode
-  _rfm95->RFM_Write(0x26,0x04); //Low datarate optimization off AGC auto on
-
-  //Set IQ to normal values
-  _rfm95->RFM_Write(0x33,0x27);
-  _rfm95->RFM_Write(0x3B,0x1D);
-
-  //Set payload length to the right length
-  _rfm95->RFM_Write(0x22,Package_Length);
-
-  //Get location of Tx part of FiFo
-  //RFM_Tx_Location = RFM_Read(0x0E);
-
-  //Set SPI pointer to start of Tx part in FiFo
-  //RFM_Write(0x0D,RFM_Tx_Location);
-  _rfm95->RFM_Write(0x0D,0x80); // hardcoded fifo location according RFM95 specs
-
-  //Write Payload to FiFo
-  for (i = 0;i < Package_Length; i++)
-  {
-    _rfm95->RFM_Write(0x00,*RFM_Tx_Package);
-    RFM_Tx_Package++;
-  }
-
-  //Switch RFM to Tx
-  _rfm95->RFM_Write(0x01,0x83);
-
-  //Wait for TxDone
-  while(!_rfm95->txDone())
-  {
-  }
-
-  //Switch RFM to sleep
-  _rfm95->RFM_Write(0x01,0x00);
-}
-
-
-
-
-
-
-
-
-
 
 
 
@@ -306,7 +198,6 @@ void LoRaWAN::Encrypt_Payload(unsigned char *Data, unsigned char Data_Length, un
     }
   }
 }
-
 
 void LoRaWAN::Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char Data_Length, unsigned int Frame_Counter, unsigned char Direction)
 {
@@ -466,7 +357,6 @@ void LoRaWAN::Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsig
   Final_MIC[3] = New_Data[3];
 }
 
-
 void LoRaWAN::Generate_Keys(unsigned char *K1, unsigned char *K2)
 {
   unsigned char i;
@@ -520,6 +410,7 @@ void LoRaWAN::Generate_Keys(unsigned char *K1, unsigned char *K2)
     K2[15] = K2[15] ^ 0x87;
   }
 }
+
 
 void LoRaWAN::Shift_Left(unsigned char *Data)
 {
