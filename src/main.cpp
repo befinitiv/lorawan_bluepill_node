@@ -9,6 +9,10 @@
   Hardware information at the end of this file.
   @version 2018-03-31
 
+  @version 2018-06-21
+  binary was broken on atmelavr platform 1.9.0 (7200 bytes hex file)
+  modified platform.ini to force to platform 1.8.0 (7212 bytes hex file)
+
 */
 #include <Arduino.h>
 #include <avr/sleep.h>
