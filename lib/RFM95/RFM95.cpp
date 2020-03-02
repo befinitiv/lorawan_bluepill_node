@@ -9,16 +9,18 @@
 
 #include "Arduino.h"
 #include "RFM95.h"
-#include <tinySPI.h>
+#include <SPI.h>
 
 // constructor
 RFM95::RFM95(int DIO0, int NSS)
 {
   _DIO0 = DIO0;
   _NSS = NSS;
-  // init tinySPI
-  SPI.setDataMode(SPI_MODE0);
-  SPI.begin();
+
+  _spi.begin();
+  _spi.setDataMode(SPI_MODE0);
+  _spi.setBitOrder(MSBFIRST);
+  _spi.setClockDivider(SPI_CLOCK_DIV16);
 }
 
 
@@ -63,8 +65,8 @@ void RFM95::init()
   //BW = 125 kHz, Coding rate 4/5, Explicit header mode
   RFM_Write(0x1D,0x72);
 
-  //Spreading factor 7, PayloadCRC On
-  RFM_Write(0x1E,0xB4);
+  //Spreading factor 10, PayloadCRC On
+  RFM_Write(0x1E,0xA4);
 
   //Rx Timeout set to 37 symbols
   RFM_Write(0x1F,0x25);
@@ -110,9 +112,9 @@ void RFM95::RFM_Write(unsigned char RFM_Address, unsigned char RFM_Data)
   digitalWrite(_NSS,LOW);
 
   //Send Addres with MSB 1 to make it a write command
-  SPI.transfer(RFM_Address | 0x80);
+  _spi.transfer(RFM_Address | 0x80);
   //Send Data
-  SPI.transfer(RFM_Data);
+  _spi.transfer(RFM_Data);
 
   //Set NSS pin High to end communication
   digitalWrite(_NSS,HIGH);
@@ -136,9 +138,9 @@ unsigned char RFM95::RFM_Read(unsigned char RFM_Address)
   digitalWrite(_NSS,LOW);
 
   //Send Address
-  SPI.transfer(RFM_Address);
+  _spi.transfer(RFM_Address);
   //Send 0x00 to be able to receive the answer from the RFM
-  RFM_Data = SPI.transfer(0x00);
+  RFM_Data = _spi.transfer(0x00);
 
   //Set NSS high to end communication
   digitalWrite(_NSS,HIGH);
@@ -158,6 +160,7 @@ unsigned char RFM95::RFM_Read(unsigned char RFM_Address)
 
 void RFM95::RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Package_Length)
 {
+  static unsigned char ch = 0;
   unsigned char i;
   // unsigned char RFM_Tx_Location = 0x00;
 
@@ -186,7 +189,7 @@ void RFM95::RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Packag
   // TCNT0 is timer0 continous timer, kind of random selection of frequency
 
   // EU863-870 specifications
-  switch (TCNT0 % 8)
+  switch (ch++ % 8)
   {
       case 0x00: //Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
           RFM_Write(0x06,0xD9);
@@ -236,7 +239,7 @@ void RFM95::RFM_Send_Package(unsigned char *RFM_Tx_Package, unsigned char Packag
 
 
   //SF7 BW 125 kHz
-  RFM_Write(0x1E,0x74); //SF7 CRC On
+  RFM_Write(0x1E,0xA4); //SF10 CRC On
   RFM_Write(0x1D,0x72); //125 kHz 4/5 coding rate explicit header mode
   RFM_Write(0x26,0x04); //Low datarate optimization off AGC auto on
 

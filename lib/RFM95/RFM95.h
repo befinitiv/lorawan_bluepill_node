@@ -11,6 +11,7 @@
 #define RMF95_h
 
 #include "Arduino.h"
+#include "SPI.h"
 
 class RFM95
 {
@@ -23,6 +24,7 @@ class RFM95
   private:
     int _DIO0;
     int _NSS;
+    SPIClass _spi;
 };
 
 
